@@ -576,12 +576,12 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 	 * possible.
 	 */
 
-	 mdctx = EVP_MD_CTX_create();
+	 mdctx = EVP_MD_CTX_new();
 	 if (!mdctx)
 		 return 1;
 
 	if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1) {
-		EVP_MD_CTX_destroy(mdctx);
+		EVP_MD_CTX_free(mdctx);
 
 		return 1;
 	}

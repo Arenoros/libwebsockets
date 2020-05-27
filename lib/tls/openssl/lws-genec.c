@@ -439,7 +439,7 @@ lws_genecdsa_hash_sign(struct lws_genec_ctx *ctx, const uint8_t *in,
 	if (!md)
 		return -1;
 
-	mdctx = EVP_MD_CTX_create();
+	mdctx = EVP_MD_CTX_new();
 	if (!mdctx)
 		goto bail;
 

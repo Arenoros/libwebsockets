@@ -358,7 +358,7 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 			goto bail;
 		}
 
-		mdctx = EVP_MD_CTX_create();
+		mdctx = EVP_MD_CTX_new();
 		if (!mdctx)
 			goto bail;
 
