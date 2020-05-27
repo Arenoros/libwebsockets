@@ -28,7 +28,7 @@ static int
 rops_handle_POLLIN_pipe(struct lws_context_per_thread *pt, struct lws *wsi,
 			struct lws_pollfd *pollfd)
 {
-#if defined(LWS_HAVE_EVENTFD)
+#if defined(LWS_HAVE_EVENTFD) && defined(LWS_HAVE_EVENTFD_H)
 	eventfd_t value;
 	if (eventfd_read(wsi->desc.sockfd, &value) < 0)
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
