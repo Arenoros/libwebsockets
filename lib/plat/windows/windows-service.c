@@ -195,28 +195,34 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 		pfd->revents = (short)networkevents.lNetworkEvents;
 
 		err = networkevents.iErrorCode[FD_CONNECT_BIT];
-
-		if (networkevents.lNetworkEvents & FD_CONNECT) {
-			lwsl_debug("%s: FD_CONNECT\n", __func__);
+               if ((networkevents.lNetworkEvents & FD_CONNECT) && wsi_from_fd(context, pfd->fd) && !wsi_from_fd(context, pfd->fd)->udp) {
+                       lwsl_debug("%s: FD_CONNECT: %p\n", __func__, wsi_from_fd(context, pfd->fd));
 			pfd->revents &= ~LWS_POLLOUT;
-			if (
-			     err && err != LWS_EALREADY &&
-			     err != LWS_EINPROGRESS && err != LWS_EWOULDBLOCK &&
-			     err != WSAEINVAL) {
+			if (err && err != LWS_EALREADY &&
+			    err != LWS_EINPROGRESS && err != LWS_EWOULDBLOCK &&
+			    err != WSAEINVAL) {
 				lwsl_debug("Unable to connect errno=%d\n", err);
+
 				/*
 				 * the connection has definitively failed... but
 				 * do we have more DNS entries to try?
 				 */
 				if (wsi_from_fd(context, pfd->fd)->dns_results_next) {
-					lws_sul_schedule(context, 0, &wsi_from_fd(context, pfd->fd)->sul_timeout,
+					lws_sul_schedule(context, 0, &wsi_from_fd(context, pfd->fd)->
+									sul_connect_timeout,
 							 lws_client_conn_wait_timeout, 1);
 					continue;
-				}
-
-				pfd->revents |= LWS_POLLHUP;
+                               } else
+					pfd->revents |= LWS_POLLHUP;
 			} else
-				pfd->revents |= LWS_POLLOUT; /* indicate connect completed */
+                               if (wsi_from_fd(context, pfd->fd)) {
+                                       if (wsi_from_fd(context, pfd->fd)->udp)
+                                               pfd->revents |= LWS_POLLHUP;
+                                       else
+                                               lws_client_connect_3_connect(wsi_from_fd(context, pfd->fd),
+								NULL, NULL, LWS_CONNECT_COMPLETION_GOOD,
+								NULL);
+                               }
 		}
 
 		if (pfd->revents & LWS_POLLOUT) {

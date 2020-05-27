@@ -237,6 +237,10 @@ struct lws_ss_plugin;
 
 typedef int (*lws_context_ready_cb_t)(struct lws_context *context);
 
+typedef int (*lws_peer_limits_notify_t)(struct lws_context *ctx,
+					lws_sockfd_type sockfd,
+					lws_sockaddr46 *sa46);
+
 /** struct lws_context_creation_info - parameters to create context and /or vhost with
  *
  * This is also used to create vhosts.... if LWS_SERVER_OPTION_EXPLICIT_VHOSTS
@@ -402,6 +406,10 @@ struct lws_context_creation_info {
 	 * library are protected from hanging forever by timeouts.  If
 	 * nonzero, this member lets you set the timeout used in seconds.
 	 * Otherwise a default timeout is used. */
+	unsigned int connect_timeout_secs;
+	/**< VHOST: client connections have this long to find a working server
+	 * from the DNS results, or the whole connection times out.  If zero,
+	 * a default timeout is used */
 	const char *ecdh_curve;
 	/**< VHOST: if NULL, defaults to initializing server with
 	 *   "prime256v1" */
@@ -734,6 +742,15 @@ struct lws_context_creation_info {
 	/**< 0 = inherit the initial ulimit for files / sockets from the startup
 	 * environment.  Nonzero = try to set the limit for this process.
 	 */
+#if defined(LWS_WITH_PEER_LIMITS)
+	lws_peer_limits_notify_t pl_notify_cb;
+	/**< CONTEXT: NULL, or a callback to receive notifications each time a
+	 * connection is being dropped because of peer limits.
+	 *
+	 * The callback provides the context, and an lws_sockaddr46 with the
+	 * peer address and port.
+	 */
+#endif
 
 	/* Add new things just above here ---^
 	 * This is part of the ABI, don't needlessly break compatibility

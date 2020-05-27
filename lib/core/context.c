@@ -548,7 +548,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 	if (info->timeout_secs)
 		context->timeout_secs = info->timeout_secs;
 	else
-		context->timeout_secs = AWAITING_TIMEOUT;
+		context->timeout_secs = 5;
 
 	lwsl_info(" default timeout (secs): %u\n", context->timeout_secs);
 
@@ -661,6 +661,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 	context->ip_limit_ah = info->ip_limit_ah;
 	context->ip_limit_wsi = info->ip_limit_wsi;
+	context->pl_notify_cb = info->pl_notify_cb;
 #endif
 
 	lwsl_info(" mem: context:         %5lu B (%ld ctx + (%ld thr x %d))\n",
@@ -1047,8 +1048,6 @@ lws_context_destroy3(struct lws_context *context)
 	int n;
 
 #if defined(LWS_WITH_NETWORK)
-
-	lwsl_err("%s\n", __func__);
 
 	context->finalize_destroy_after_internal_loops_stopped = 1;
 	if (context->event_loop_ops->destroy_context2)

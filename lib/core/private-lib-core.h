@@ -84,9 +84,6 @@
 #ifndef SPEC_LATEST_SUPPORTED
 #define SPEC_LATEST_SUPPORTED 13
 #endif
-#ifndef AWAITING_TIMEOUT
-#define AWAITING_TIMEOUT 30
-#endif
 #ifndef CIPHERS_LIST_STRING
 #define CIPHERS_LIST_STRING "DEFAULT"
 #endif
@@ -136,6 +133,7 @@
 
 #include "libwebsockets.h"
 
+
 /*
  * Generic bidi tx credit management
  */
@@ -150,8 +148,9 @@ struct lws_tx_credit {
 	uint8_t			manual;
 };
 
-
+#if defined(LWS_WITH_TLS)
 #include "private-lib-tls.h"
+#endif
 
 #if defined(WIN32) || defined(_WIN32)
 	 // Visual studio older than 2015 and WIN_CE has only _stricmp
@@ -433,9 +432,10 @@ struct lws_context {
 #endif
 
 #if defined(LWS_WITH_PEER_LIMITS)
-	struct lws_peer **pl_hash_table;
-	struct lws_peer *peer_wait_list;
-	time_t next_cull;
+	struct lws_peer			**pl_hash_table;
+	struct lws_peer			*peer_wait_list;
+	lws_peer_limits_notify_t	pl_notify_cb;
+	time_t				next_cull;
 #endif
 
 	const lws_system_ops_t *system_ops;
