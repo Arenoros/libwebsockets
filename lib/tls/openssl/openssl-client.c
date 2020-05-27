@@ -30,9 +30,7 @@
  * Care: many openssl apis return 1 for success.  These are translated to the
  * lws convention of 0 for success.
  */
-#ifndef LWS_HAVE_STRNLEN
-#define strnlen(Str, Size) (strlen((Str)))
-#endif
+
 
 int lws_openssl_describe_cipher(struct lws *wsi);
 
