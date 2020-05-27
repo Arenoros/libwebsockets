@@ -61,7 +61,7 @@ if (LWS_WITH_FSMOUNT AND ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 if (LWS_WITH_DIR)
-	list(APPEND SOURCES misc/dir.c)
+	#list(APPEND SOURCES misc/dir.c)
 endif()
 
 if (LWS_WITH_THREADPOOL AND LWS_HAVE_PTHREAD_H)
