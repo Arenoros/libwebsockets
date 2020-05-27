@@ -122,3 +122,6 @@
 
 /* Defined if you have the <inttypes.h> header file. */
 #cmakedefine LWS_HAVE_INTTYPES_H
+
+/* Defined if you have the <sys/eventfd.h> header file. */
+#cmakedefine LWS_HAVE_EVENTFD_H

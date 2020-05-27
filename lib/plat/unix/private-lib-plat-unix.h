@@ -46,7 +46,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/un.h>
-#if defined(LWS_HAVE_EVENTFD)
+#if defined(LWS_HAVE_EVENTFD_H)
 #include <sys/eventfd.h>
 #endif
 
