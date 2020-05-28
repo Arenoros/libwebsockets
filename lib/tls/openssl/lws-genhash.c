@@ -35,7 +35,7 @@ int
 lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
 {
 	ctx->type = type;
-	ctx->mdctx = EVP_MD_CTX_create();
+	ctx->mdctx = EVP_MD_CTX_new();
 	if (!ctx->mdctx)
 		return 1;
 
@@ -60,7 +60,7 @@ lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
 	}
 
 	if (EVP_DigestInit_ex(ctx->mdctx, ctx->evp_type, NULL) != 1) {
-		EVP_MD_CTX_destroy(ctx->mdctx);
+		EVP_MD_CTX_free(ctx->mdctx);
 
 		return 1;
 	}
@@ -88,7 +88,7 @@ lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
 
 	(void)len;
 
-	EVP_MD_CTX_destroy(ctx->mdctx);
+	EVP_MD_CTX_free(ctx->mdctx);
 
 	return ret;
 }

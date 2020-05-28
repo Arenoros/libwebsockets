@@ -30,7 +30,7 @@
 
 static const char *library_version = LWS_LIBRARY_VERSION " " LWS_BUILD_HASH;
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__QNX__)
 /* for setrlimit */
 #include <sys/resource.h>
 #endif

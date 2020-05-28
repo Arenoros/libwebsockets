@@ -21,6 +21,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+
+ #if !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <string.h>
 
 #include "private-lib-core.h"
@@ -30,6 +35,10 @@
  * Care: many openssl apis return 1 for success.  These are translated to the
  * lws convention of 0 for success.
  */
+
+#ifndef LWS_HAVE_STRNLEN
+#define strnlen(STR, MAX_LEN) (strlen((STR)))
+#endif
 
 int lws_openssl_describe_cipher(struct lws *wsi);
 
@@ -575,12 +584,12 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 	 * possible.
 	 */
 
-	 mdctx = EVP_MD_CTX_create();
+	 mdctx = EVP_MD_CTX_new();
 	 if (!mdctx)
 		 return 1;
 
 	if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1) {
-		EVP_MD_CTX_destroy(mdctx);
+		EVP_MD_CTX_free(mdctx);
 
 		return 1;
 	}

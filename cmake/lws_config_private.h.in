@@ -109,3 +109,6 @@
 
 /* Defined if you have the <sys/eventfd.h> header file. */
 #cmakedefine LWS_HAVE_EVENTFD_H
+
+/* Define to 1 if you have the `strnlen' function. */
+#cmakedefine LWS_HAVE_STRNLEN

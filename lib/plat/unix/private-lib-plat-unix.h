@@ -63,12 +63,12 @@
 #endif
 #if defined(__QNX__)
 	#include <gulliver.h>
-	#if defined(__LITTLEENDIAN__)
+	#if defined(__LITTLEENDIAN__) && !defined(BYTE_ORDER)
 		#define BYTE_ORDER __LITTLEENDIAN__
 		#define LITTLE_ENDIAN __LITTLEENDIAN__
 		#define BIG_ENDIAN 4321  /* to show byte order (taken from gcc); for suppres warning that BIG_ENDIAN is not defined. */
 	#endif
-	#if defined(__BIGENDIAN__)
+	#if defined(__BIGENDIAN__) && !defined(BYTE_ORDER)
 		#define BYTE_ORDER __BIGENDIAN__
 		#define LITTLE_ENDIAN 1234  /* to show byte order (taken from gcc); for suppres warning that LITTLE_ENDIAN is not defined. */
 		#define BIG_ENDIAN __BIGENDIAN__

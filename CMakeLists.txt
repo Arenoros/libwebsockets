@@ -156,6 +156,7 @@ option(LWS_WITH_ESP32_HELPER "Build ESP32 helper" OFF)
 option(LWS_PLAT_OPTEE "Build for OPTEE" OFF)
 option(LWS_PLAT_FREERTOS "Build for FreeRTOS" OFF)
 option(LWS_PLAT_ANDROID "Android flavour of unix platform" OFF)
+option(LWS_PLAT_QNX "Build for QNX" OFF)
 
 #
 # Client / Server / Test Apps build control
@@ -189,8 +190,8 @@ if (LWS_WITH_ESP32)
 option(LWS_WITH_DIR "Directory scanning api support" OFF)
 option(LWS_WITH_LEJP_CONF "With LEJP configuration parser as used by lwsws" OFF)
 else()
-option(LWS_WITH_DIR "Directory scanning api support" OFF)
-option(LWS_WITH_LEJP_CONF "With LEJP configuration parser as used by lwsws" OFF)
+option(LWS_WITH_DIR "Directory scanning api support" ON)
+option(LWS_WITH_LEJP_CONF "With LEJP configuration parser as used by lwsws" ON)
 endif()
 option(LWS_WITH_NO_LOGS "Disable all logging other than _err and _user from being compiled in" OFF)
 set(LWS_LOGGING_BITFIELD_SET 0 CACHE STRING "Bitfield describing which log levels to force included into the build")
@@ -239,6 +240,10 @@ set(LIB_LIST_AT_END)
 set(LWS_LIBRARIES)
 set(LWS_OPENSSL_SUPPORT 0)
 include(CMakeLists-implied-options.txt)
+
+if(LWS_PLAT_QNX)
+	set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS} "-lsocket")
+endif()
 
 #
 # Structural helpers for cmake in subdirs
@@ -469,7 +474,7 @@ CHECK_FUNCTION_EXISTS(atoll LWS_HAVE_ATOLL)
 CHECK_FUNCTION_EXISTS(_atoi64 LWS_HAVE__ATOI64)
 CHECK_FUNCTION_EXISTS(_stat32i64 LWS_HAVE__STAT32I64)
 CHECK_FUNCTION_EXISTS(clock_gettime LWS_HAVE_CLOCK_GETTIME)
-
+CHECK_FUNCTION_EXISTS(strnlen LWS_HAVE_STRNLEN) 
 
 if (NOT LWS_HAVE_GETIFADDRS)
 	if (LWS_WITHOUT_BUILTIN_GETIFADDRS)
@@ -556,6 +561,8 @@ endif()
 if (LWS_HAVE_PTHREAD_H AND NOT LWS_PLAT_FREERTOS)
 	if (COMPILER_IS_CLANG)
 		set(LWS_PTHR_FLAGS "-pthread")# -Wno-error=unused-command-line-argument")
+	elseif(LWS_PLAT_QNX)
+		set(LWS_PTHR_FLAGS "")
 	else()
 		set(LWS_PTHR_FLAGS "-pthread")
 	endif()

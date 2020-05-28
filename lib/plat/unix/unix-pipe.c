@@ -27,6 +27,12 @@
 #endif
 #include "private-lib-core.h"
 
+#ifndef EFD_NONBLOCK
+#  define EFD_NONBLOCK 0
+#endif
+#ifndef EFD_CLOEXEC
+#  define EFD_CLOEXEC 0
+#endif
 
 int
 lws_plat_pipe_create(struct lws *wsi)
