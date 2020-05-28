@@ -156,6 +156,7 @@ option(LWS_WITH_ESP32_HELPER "Build ESP32 helper" OFF)
 option(LWS_PLAT_OPTEE "Build for OPTEE" OFF)
 option(LWS_PLAT_FREERTOS "Build for FreeRTOS" OFF)
 option(LWS_PLAT_ANDROID "Android flavour of unix platform" OFF)
+option(LWS_PLAT_QNX "Build for QNX" OFF)
 
 #
 # Client / Server / Test Apps build control
@@ -239,6 +240,10 @@ set(LIB_LIST_AT_END)
 set(LWS_LIBRARIES)
 set(LWS_OPENSSL_SUPPORT 0)
 include(CMakeLists-implied-options.txt)
+
+if(LWS_PLAT_QNX)
+	set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS} "-lsocket")
+endif()
 
 #
 # Structural helpers for cmake in subdirs
@@ -556,6 +561,8 @@ endif()
 if (LWS_HAVE_PTHREAD_H AND NOT LWS_PLAT_FREERTOS)
 	if (COMPILER_IS_CLANG)
 		set(LWS_PTHR_FLAGS "-pthread")# -Wno-error=unused-command-line-argument")
+	elseif(LWS_PLAT_QNX)
+		set(LWS_PTHR_FLAGS "")
 	else()
 		set(LWS_PTHR_FLAGS "-pthread")
 	endif()

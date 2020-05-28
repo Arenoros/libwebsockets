@@ -21,6 +21,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+
+ #if !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <string.h>
 
 #include "private-lib-core.h"
@@ -31,6 +36,9 @@
  * lws convention of 0 for success.
  */
 
+#ifndef LWS_HAVE_STRNLEN
+#define strnlen(STR, MAX_LEN) (strlen((STR)))
+#endif
 
 int lws_openssl_describe_cipher(struct lws *wsi);
 

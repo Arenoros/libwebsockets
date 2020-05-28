@@ -572,7 +572,7 @@ lws_sul_http_ah_lifecheck(lws_sorted_usec_list_t *sul)
 		if (!ah->in_use || !ah->wsi || !ah->assigned ||
 		    (ah->wsi->vhost &&
 		     (now - ah->assigned) <
-		     ah->wsi->vhost->timeout_secs_ah_idle + 360)) {
+		     (time_t)ah->wsi->vhost->timeout_secs_ah_idle + 360)) {
 			ah = ah->next;
 			continue;
 		}
