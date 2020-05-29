@@ -334,7 +334,7 @@ if (LWS_IPV6)
 	set(LWS_WITH_IPV6 1)
 endif()
 
-if (LWS_UNIX_SOCK)
+if (NOT WIN32 OR LWS_UNIX_SOCK)
     set(LWS_WITH_UNIX_SOCK 1)
 endif()
 
