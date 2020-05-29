@@ -414,7 +414,8 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 		if (!connect(wsi->desc.sockfd, NULL, 0)) {
 			goto conn_good;
                } else {
-			if (!errno || errno == WSAEINVAL || errno == WSAEWOULDBLOCK || errno == WSAEALREADY) {
+			if (!LWS_ERRNO || LWS_ERRNO == WSAEINVAL ||
+			    LWS_ERRNO == WSAEWOULDBLOCK || LWS_ERRNO == WSAEALREADY) {
 				lwsl_info("%s: errno %d\n", __func__, errno);
 				return NULL;
 			}
@@ -466,7 +467,11 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
 	if (n == LADNS_RET_FAILED) {
 		lwsl_notice("%s: adns failed %s\n", __func__, ads);
-		goto oom4;
+		/*
+		 * Caller that is giving us LADNS_RET_FAILED will deal
+		 * with cleanup
+		 */
+		return NULL;
 	}
 #endif
 
@@ -680,9 +685,9 @@ ads_known:
 	if (wsi->unix_skt) {
 		psa = (const struct sockaddr *)&sau;
 		if (sau.sun_path[0])
-			n = sizeof(uint16_t) + strlen(sau.sun_path);
+			n = (int)(sizeof(uint16_t) + strlen(sau.sun_path));
 		else
-			n = sizeof(uint16_t) + strlen(&sau.sun_path[1]) + 1;
+			n = (int)(sizeof(uint16_t) + strlen(&sau.sun_path[1]) + 1);
 	} else
 #endif
 

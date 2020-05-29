@@ -67,6 +67,11 @@ option(LWS_WITH_DISTRO_RECOMMENDED "Enable features recommended for distro packa
 option(LWS_FOR_GITOHASHI "Enable features recommended for use with gitohashi" OFF)
 
 #
+# Compiler features
+#
+option(DISABLE_WERROR "Avoid treating compiler warnings as fatal errors" OFF)
+
+#
 # Major individual features
 #
 option(LWS_WITH_NETWORK "Compile with network-related code" ON)
@@ -80,7 +85,7 @@ option(LWS_WITH_HTTP2 "Compile with server support for HTTP/2" ON)
 option(LWS_WITH_LWSWS "Libwebsockets Webserver" OFF)
 option(LWS_WITH_CGI "Include CGI (spawn process with network-connected stdin/out/err) APIs" OFF)
 option(LWS_IPV6 "Compile with support for ipv6" OFF)
-option(LWS_UNIX_SOCK "Compile with support for UNIX domain socket" OFF)
+option(LWS_UNIX_SOCK "Compile with support for UNIX domain socket if OS supports it" ON)
 option(LWS_WITH_PLUGINS "Support plugins for protocols and extensions" OFF)
 option(LWS_WITH_HTTP_PROXY "Support for active HTTP proxying" OFF)
 option(LWS_WITH_ZIP_FOPS "Support serving pre-zipped files" OFF)
@@ -244,7 +249,6 @@ include(CMakeLists-implied-options.txt)
 if(LWS_PLAT_QNX)
 	set(CMAKE_REQUIRED_LINK_OPTIONS  ${CMAKE_REQUIRED_LINK_OPTIONS} "-lsocket")
 endif()
-
 #
 # Structural helpers for cmake in subdirs
 #
@@ -603,9 +607,6 @@ if (NOT LWS_HAVE_REALLOC)
 	set(realloc rpl_realloc)
 endif()
 
-
-
-
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR COMPILER_IS_CLANG)
     include (CheckCCompilerFlag)
     CHECK_C_COMPILER_FLAG(-fvisibility=hidden LWS_HAVE_VISIBILITY)
@@ -646,12 +647,15 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR COMPILER_IS_CLANG)
 		set(CMAKE_C_FLAGS "-fanalyzer ${CMAKE_C_FLAGS}" )
 	endif()
 
-	# always warn all and Werror, and generate debug info
+	# always warn all and generate debug info
     if (UNIX AND NOT LWS_PLAT_FREERTOS)
-	    set(CMAKE_C_FLAGS "-g -Wall -Wsign-compare -Wstrict-aliasing -Wuninitialized -Werror ${VISIBILITY_FLAG} -Wundef ${GCOV_FLAGS} ${CMAKE_C_FLAGS} ${ASAN_FLAGS}" )
+	    set(CMAKE_C_FLAGS "-g -Wall -Wsign-compare -Wstrict-aliasing -Wuninitialized ${VISIBILITY_FLAG} -Wundef ${GCOV_FLAGS} ${CMAKE_C_FLAGS} ${ASAN_FLAGS}" )
     else()
-	    set(CMAKE_C_FLAGS "-g -Wall -Wsign-compare -Wuninitialized -Werror ${VISIBILITY_FLAG} ${GCOV_FLAGS} ${CMAKE_C_FLAGS}" )
+	    set(CMAKE_C_FLAGS "-g -Wall -Wsign-compare -Wuninitialized ${VISIBILITY_FLAG} ${GCOV_FLAGS} ${CMAKE_C_FLAGS}" )
     endif()
+	    if ("${DISABLE_WERROR}" STREQUAL "OFF")
+		    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+	    endif()
 endif ()
 
 
@@ -763,30 +767,45 @@ list(APPEND LIB_LIST ${LIB_LIST_AT_END})
 include_directories("${PROJECT_SOURCE_DIR}/lib")
 add_subdirectory(lib)
 
-# Generate the lws_config.h that includes all the public compilation settings.
-configure_file(
-       "${PROJECT_SOURCE_DIR}/cmake/lws_config.h.in"
-       "${PROJECT_BINARY_DIR}/lws_config.h")
-       
-add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/lws_config.h
-		${CMAKE_CURRENT_BINARY_DIR}/include/libwebsockets
-		${CMAKE_CURRENT_BINARY_DIR}/include/libwebsockets.h
-      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/lws_config.h
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/include/libwebsockets.h
-     		${CMAKE_CURRENT_BINARY_DIR}/include/libwebsockets.h
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include/libwebsockets/
-		${CMAKE_CURRENT_BINARY_DIR}/include/libwebsockets
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/lws_config.h
-     		${CMAKE_CURRENT_BINARY_DIR}/include/lws_config.h
-)
+if(WIN32 AND NOT CYGWIN)
+  set(DEF_INSTALL_CMAKE_DIR cmake)
+else()
+  set(DEF_INSTALL_CMAKE_DIR lib${LIB_SUFFIX}/cmake/libwebsockets)
+endif()
 
-file(GLOB HDR_PUBLIC1 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/libwebsockets/*.h)
-file(GLOB HDR_PUBLIC2 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/libwebsockets.h)
-file(GLOB HDR_PUBLIC3 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include/lws_config.h)
-list(APPEND HDR_PUBLIC ${HDR_PUBLIC1} ${HDR_PUBLIC2} ${HDR_PUBLIC3})
+set(LWS__INCLUDE_DIRS 
+    "\${LWS_CMAKE_DIR}/${REL_INCLUDE_DIR}") 
 
-set_source_files_properties(${HDR_PUBLIC} PROPERTIES GENERATED 1)
+configure_file(${PROJECT_SOURCE_DIR}/cmake/libwebsockets-config.cmake.in
+                ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libwebsockets-config.cmake 
+                @ONLY)
+
+# Generate version info for both build-tree and install-tree.
+configure_file(${PROJECT_SOURCE_DIR}/cmake/libwebsockets-config-version.cmake.in
+                ${PROJECT_BINARY_DIR}/libwebsockets-config-version.cmake 
+                @ONLY)
+
+# Generate the config file for the build-tree.
+set(LWS__INCLUDE_DIRS 
+    "${PROJECT_SOURCE_DIR}/lib"
+    "${PROJECT_BINARY_DIR}")
+set(LIBWEBSOCKETS_INCLUDE_DIRS ${LWS__INCLUDE_DIRS} CACHE PATH "Libwebsockets include directories")
+configure_file(${PROJECT_SOURCE_DIR}/cmake/libwebsockets-config.cmake.in
+                ${PROJECT_BINARY_DIR}/libwebsockets-config.cmake 
+                @ONLY)
+set(LWS_INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
+
+# Export targets (This is used for other CMake projects to easily find the libraries and include files).
+if (LWS_WITH_EXPORT_LWSTARGETS)
+    export(TARGETS ${LWS_LIBRARIES}
+            FILE "${PROJECT_BINARY_DIR}/LibwebsocketsTargets.cmake")
+endif()
+
+
+
+set(libwebsockets_DIR ${PROJECT_BINARY_DIR})
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+message("DIR ${libwebsockets_DIR} CMP ${CMAKE_MODULE_PATH}")
 
 if (LWS_WITH_MINIMAL_EXAMPLES)
 	add_subdirectory(minimal-examples)
@@ -799,37 +818,54 @@ endif()
 add_subdirectory(plugins)
 add_subdirectory(lwsws)
 
+# Generate the lws_config.h that includes all the public compilation settings.
+configure_file(
+       "${PROJECT_SOURCE_DIR}/cmake/lws_config.h.in"
+       "${PROJECT_BINARY_DIR}/lws_config.h")
+       
+add_custom_command(
+		OUTPUT ${PROJECT_BINARY_DIR}/include/lws_config.h
+			${PROJECT_BINARY_DIR}/include/libwebsockets
+			${PROJECT_BINARY_DIR}/include/libwebsockets.h
+		COMMENT "Creating build include dir"
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/include/libwebsockets.h
+     			${CMAKE_CURRENT_BINARY_DIR}/include/libwebsockets.h
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include/libwebsockets/
+			${CMAKE_CURRENT_BINARY_DIR}/include/libwebsockets
+		COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/lws_config.h
+     			${CMAKE_CURRENT_BINARY_DIR}/include/lws_config.h
+		MAIN_DEPENDENCY ${PROJECT_BINARY_DIR}/lws_config.h
+)
+
+add_custom_target(GENHDR DEPENDS  ${PROJECT_BINARY_DIR}/include/lws_config.h)
+
+file(GLOB HDR_PUBLIC1 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/libwebsockets/*.h)
+file(GLOB HDR_PUBLIC2 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/libwebsockets.h)
+file(GLOB HDR_PUBLIC3 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include/lws_config.h)
+list(APPEND HDR_PUBLIC ${HDR_PUBLIC1} ${HDR_PUBLIC2} ${HDR_PUBLIC3})
+
+set_source_files_properties(${HDR_PUBLIC} PROPERTIES GENERATED 1)
+
+if (LWS_WITH_STATIC)
+	add_dependencies(websockets GENHDR)
+endif()
+if (LWS_WITH_SHARED)
+	add_dependencies(websockets_shared GENHDR)
+endif()
+
+
+
+#
 #
 # Installation preparations.
 #
-
-if(WIN32 AND NOT CYGWIN)
-  set(DEF_INSTALL_CMAKE_DIR cmake)
-else()
-  set(DEF_INSTALL_CMAKE_DIR lib${LIB_SUFFIX}/cmake/libwebsockets)
-endif()
-
-set(LWS_INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
-
-# Export targets (This is used for other CMake projects to easily find the libraries and include files).
-if (LWS_WITH_EXPORT_LWSTARGETS)
-    export(TARGETS ${LWS_LIBRARIES}
-            FILE "${PROJECT_BINARY_DIR}/LibwebsocketsTargets.cmake")
-endif()
 
 export(PACKAGE libwebsockets)
 
 install(DIRECTORY include/libwebsockets
 	DESTINATION "${LWS_INSTALL_INCLUDE_DIR}" COMPONENT dev_headers)
-
-# Generate the config file for the build-tree.
-set(LWS__INCLUDE_DIRS 
-    "${PROJECT_SOURCE_DIR}/lib"
-    "${PROJECT_BINARY_DIR}")
-set(LIBWEBSOCKETS_INCLUDE_DIRS ${LWS__INCLUDE_DIRS} CACHE PATH "Libwebsockets include directories")
-configure_file(${PROJECT_SOURCE_DIR}/cmake/LibwebsocketsConfig.cmake.in
-                ${PROJECT_BINARY_DIR}/LibwebsocketsConfig.cmake 
-                @ONLY)
+install(FILES ${PROJECT_BINARY_DIR}/include/libwebsockets.h ${PROJECT_BINARY_DIR}/include/lws_config.h
+	DESTINATION "${LWS_INSTALL_INCLUDE_DIR}" COMPONENT dev_headers)
 
 # Generate the config file for the installation tree.
 get_filename_component(LWS_ABSOLUTE_INSTALL_CMAKE_DIR ${LWS_INSTALL_CMAKE_DIR} ABSOLUTE)
@@ -839,28 +875,14 @@ file(RELATIVE_PATH
     "${LWS_ABSOLUTE_INSTALL_CMAKE_DIR}"
     "${LWS_ABSOLUTE_INSTALL_INCLUDE_DIR}") # Calculate the relative directory from the cmake dir.
 
-# Note the EVENT_CMAKE_DIR is defined in JanssonConfig.cmake.in, 
-# we escape it here so it's evaluated when it is included instead
-# so that the include dirs are given relative to where the 
-# config file is located.
-set(LWS__INCLUDE_DIRS 
-    "\${LWS_CMAKE_DIR}/${REL_INCLUDE_DIR}") 
-configure_file(${PROJECT_SOURCE_DIR}/cmake/LibwebsocketsConfig.cmake.in
-                ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/LibwebsocketsConfig.cmake 
-                @ONLY)
-
-# Generate version info for both build-tree and install-tree.
-configure_file(${PROJECT_SOURCE_DIR}/cmake/LibwebsocketsConfigVersion.cmake.in
-                ${PROJECT_BINARY_DIR}/LibwebsocketsConfigVersion.cmake 
-                @ONLY)
-
 set_target_properties(${LWS_LIBRARIES}
 		PROPERTIES PUBLIC_HEADER "${HDR_PUBLIC}")
 
 # Install the LibwebsocketsConfig.cmake and LibwebsocketsConfigVersion.cmake
 install(FILES
-               "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/LibwebsocketsConfig.cmake"
-               "${PROJECT_BINARY_DIR}/LibwebsocketsConfigVersion.cmake"
+               "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libwebsockets-config.cmake"
+               "${PROJECT_BINARY_DIR}/libwebsockets-config-version.cmake"
+               "${PROJECT_SOURCE_DIR}/cmake/LwsCheckRequirements.cmake"
                DESTINATION "${LWS_INSTALL_CMAKE_DIR}" COMPONENT dev)
 
 # Install exports for the install-tree.

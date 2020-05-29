@@ -107,7 +107,7 @@ if ((LWS_ROLE_H1 OR LWS_ROLE_H2))
 			PROPERTIES
 			OUTPUT_NAME libwebsockets-${TEST_NAME})
 			
-		#target_link_libraries(${TEST_NAME} ${LIB_LIST})
+		target_link_libraries(${TEST_NAME} ${LIB_LIST_AT_END})
 
 		# Add to the list of tests.
 		list(APPEND TEST_APP_LIST ${TEST_NAME})

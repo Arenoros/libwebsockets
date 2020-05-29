@@ -1,5 +1,7 @@
 project(lws-minimal-ws-server-pmd-corner)
 cmake_minimum_required(VERSION 2.8.9)
+find_package(libwebsockets CONFIG REQUIRED)
+list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
 include(CheckCSourceCompiles)
 include(LwsCheckRequirements)
 

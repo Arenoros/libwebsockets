@@ -220,6 +220,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR COMPILER_IS_CLANG)
 	endforeach()
 endif()
 
+
 # Setup the linking for all libs.
 foreach (lib ${LWS_LIBRARIES})
 	target_link_libraries(${lib} ${LIB_LIST})
@@ -291,8 +292,6 @@ Cflags: -I\${includedir}"
 endif(UNIX)
 
 
-
-#
 # Keep explicit parent scope exports at end
 #
 

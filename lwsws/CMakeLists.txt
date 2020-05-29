@@ -44,7 +44,7 @@ if (LWS_WITH_LWSWS)
 	source_group("Sources"   FILES ${LWSWS_SRCS})
 	add_executable("lwsws" ${LWSWS_SRCS} ${LWSWS_HDR})
 
-	target_link_libraries("lwsws" websockets_shared)
+	target_link_libraries("lwsws" websockets_shared ${LIB_LIST_AT_END})
 	add_dependencies("lwsws" websockets_shared)
 	target_include_directories("lwsws" PRIVATE "${LWS_LIB_INCLUDES}" ${LWS_LIB_BUILD_INC_PATHS})
 
